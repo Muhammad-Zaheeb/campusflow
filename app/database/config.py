@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from app.core.config import DATABASE_URL
 
-# Database URL (local PostgreSQL)
-DATABASE_URL = "postgresql://localhost/campusflow"
+# Create engine using env variable
 engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

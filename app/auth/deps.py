@@ -1,14 +1,11 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
 from app.database.deps import get_db
 from app.models.user import User
-
-# MUST MATCH jwt_handler.py
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
+from app.core.config import SECRET_KEY, ALGORITHM
 
 security = HTTPBearer()
 
@@ -17,6 +14,7 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ):
+
     token = credentials.credentials
 
     try:
@@ -27,7 +25,7 @@ def get_current_user(
             raise HTTPException(status_code=401, detail="Invalid token")
 
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token is invalid or expired")
+        raise HTTPException(status_code=401, detail="Token expired or invalid")
 
     user = db.query(User).filter(User.id == user_id).first()
 

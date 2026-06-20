@@ -15,11 +15,16 @@ router = APIRouter()
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
+    # check duplicate email
     existing_user = db.query(User).filter(User.email == user.email).first()
 
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered"
+        )
 
+    # create user
     new_user = User(
         name=user.name,
         email=user.email,
@@ -42,19 +47,26 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 # ---------------- LOGIN ----------------
 @router.post("/login")
-def login(email: str, password: str, db: Session = Depends(get_db)):
+def login(user: UserCreate, db: Session = Depends(get_db)):
 
-    user = db.query(User).filter(User.email == email).first()
+    # FIX: use body instead of query params (more correct API design)
+    db_user = db.query(User).filter(User.email == user.email).first()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if not db_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
 
-    if not verify_password(password, user.password):
-        raise HTTPException(status_code=400, detail="Incorrect password")
+    if not verify_password(user.password, db_user.password):
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect password"
+        )
 
     token = create_access_token({
-        "user_id": user.id,
-        "email": user.email
+        "user_id": db_user.id,
+        "email": db_user.email
     })
 
     return {
