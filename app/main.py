@@ -4,19 +4,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import home, user, task
 from app.database.config import Base, engine
 
-# ---------------- DATABASE INIT ----------------
 Base.metadata.create_all(bind=engine)
 
-# ---------------- APP INIT ----------------
-app = FastAPI(title="CampusFlow API")
+app = FastAPI()
 
-# ---------------- CORS (PRODUCTION READY) ----------------
+# ---------------- CORS MUST BE FIRST ----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://campusflow.vercel.app"
+        "https://campusflow-frontend-jamwsucfr-zaheeb1.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
