@@ -1,26 +1,22 @@
-
-from pydantic import BaseModel
+from datetime import date
 from typing import Optional
+from pydantic import BaseModel
 
-
-# ---------------- CREATE ----------------
 
 class TaskCreate(BaseModel):
     title: str
     description: str
     priority: str = "Medium"
+    due_date: Optional[date] = None
 
-
-# ---------------- UPDATE ----------------
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
     priority: Optional[str] = None
+    due_date: Optional[date] = None
 
-
-# ---------------- RESPONSE ----------------
 
 class TaskResponse(BaseModel):
     id: int
@@ -28,8 +24,8 @@ class TaskResponse(BaseModel):
     description: str
     completed: bool
     priority: str
+    due_date: Optional[date] = None
     user_id: int
 
     class Config:
         from_attributes = True
-
