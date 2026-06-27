@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.schemas.user import UserCreate
 from app.models.user import User
@@ -10,21 +11,15 @@ from app.auth.deps import get_current_user
 
 router = APIRouter()
 
-
 # ---------------- REGISTER ----------------
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
-    # check duplicate email
     existing_user = db.query(User).filter(User.email == user.email).first()
 
     if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered"
-        )
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    # create user
     new_user = User(
         name=user.name,
         email=user.email,
@@ -45,28 +40,27 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     }
 
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN FIX ----------------
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 @router.post("/login")
-def login(user: UserCreate, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
-    # FIX: use body instead of query params (more correct API design)
-    db_user = db.query(User).filter(User.email == user.email).first()
+    user = db.query(User).filter(User.email == payload.email).first()
 
-    if not db_user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found"
-        )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    if not verify_password(user.password, db_user.password):
-        raise HTTPException(
-            status_code=400,
-            detail="Incorrect password"
-        )
+    if not verify_password(payload.password, user.password):
+        raise HTTPException(status_code=400, detail="Incorrect password")
 
     token = create_access_token({
-        "user_id": db_user.id,
-        "email": db_user.email
+        "user_id": user.id,
+        "email": user.email
     })
 
     return {
@@ -76,7 +70,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     }
 
 
-# ---------------- ME (PROTECTED ROUTE) ----------------
+# ---------------- ME ----------------
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_user)):
     return {
