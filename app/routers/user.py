@@ -12,29 +12,7 @@ from app.auth.jwt_handler import create_access_token
 from app.auth.deps import get_current_user
 from app.core.config import SECRET_KEY, ALGORITHM
 
-import smtplib
-from email.mime.text import MIMEText
-
 router = APIRouter()
-
-# ---------------- EMAIL CONFIG ----------------
-SMTP_EMAIL = "zaheeb.qureshi@gmail.com"
-SMTP_PASSWORD = "nxznsatotkzbcorn"  # NOT normal password
-
-def send_verification_email(email: str, token: str):
-    link = f"http://localhost:8000/verify-email?token={token}"
-
-    msg = MIMEText(f"Click to verify your email: {link}")
-    msg["Subject"] = "Verify your email"
-    msg["From"] = SMTP_EMAIL
-    msg["To"] = email
-
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.starttls()
-    server.login(SMTP_EMAIL, SMTP_PASSWORD)
-    server.send_message(msg)
-    server.quit()
-
 
 # ---------------- REGISTER ----------------
 @router.post("/register")
@@ -49,14 +27,14 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         name=user.name,
         email=user.email,
         password=hash_password(user.password),
-        is_verified=False
+        is_verified=True  # ✅ TEMP FIX: auto verify for deployment
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # create verification token
+    # create token (kept for future email system)
     token = jwt.encode(
         {
             "user_id": new_user.id,
@@ -66,12 +44,16 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         algorithm=ALGORITHM
     )
 
-    send_verification_email(new_user.email, token)
+    # ❌ EMAIL DISABLED (RENDER SMTP BLOCKED)
+    # send_verification_email(new_user.email, token)
 
-    return {"message": "User created. Check email to verify account."}
+    return {
+        "message": "User created successfully",
+        "user_id": new_user.id
+    }
 
 
-# ---------------- VERIFY EMAIL ----------------
+# ---------------- VERIFY EMAIL (kept for future) ----------------
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
 
@@ -106,9 +88,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="Email not verified")
 
     if not verify_password(payload.password, user.password):
         raise HTTPException(status_code=400, detail="Incorrect password")
