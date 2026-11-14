@@ -38,7 +38,12 @@ def get_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return db.query(Task).filter(Task.user_id == current_user.id).all()
+    return (
+        db.query(Task)
+        .filter(Task.user_id == current_user.id)
+        .order_by(Task.id.desc())
+        .all()
+    )
 
 
 # UPDATE
@@ -57,16 +62,13 @@ def update_task(
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if task.title is not None:
-        db_task.title = task.title
-    if task.description is not None:
-        db_task.description = task.description
-    if task.completed is not None:
-        db_task.completed = task.completed
-    if task.priority is not None:
-        db_task.priority = task.priority
-    if task.due_date is not None:
-        db_task.due_date = task.due_date
+    # Only touch fields the client sent. due_date may be sent as null to clear it;
+    # the other fields ignore null.
+    changes = task.model_dump(exclude_unset=True)
+    for field, value in changes.items():
+        if value is None and field != "due_date":
+            continue
+        setattr(db_task, field, value)
 
     db.commit()
     db.refresh(db_task)
