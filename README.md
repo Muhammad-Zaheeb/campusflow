@@ -4,6 +4,7 @@ The backend for **[CampusFlow](https://github.com/Muhammad-Zaheeb/campusflow-fro
 
 **[Live app](https://campusflow-frontend-blond.vercel.app)** · **[Interactive API docs](https://campusflow-uoi7.onrender.com/docs)** · **[Frontend repo](https://github.com/Muhammad-Zaheeb/campusflow-frontend)**
 
+[![Tests](https://github.com/Muhammad-Zaheeb/campusflow/actions/workflows/tests.yml/badge.svg)](https://github.com/Muhammad-Zaheeb/campusflow/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy_2.0-D71F00?logo=sqlalchemy&logoColor=white)
@@ -28,6 +29,7 @@ The backend for **[CampusFlow](https://github.com/Muhammad-Zaheeb/campusflow-fro
   - emails trimmed and compared case-insensitively
 - **Safe error messages:** login returns the same error for an unknown email and a wrong password, so the form can't be used to find registered accounts
 - **Auto-generated docs:** Swagger UI at `/docs`, ReDoc at `/redoc`
+- **Automated tests:** 30 pytest tests run on every push with GitHub Actions
 
 ## API endpoints
 
@@ -74,6 +76,7 @@ app/
 ├── routers/       # Endpoints: home, user (auth), task
 ├── schemas/       # Pydantic request validation
 └── main.py        # App setup, CORS and routes
+tests/             # pytest suite (auth, validation, tasks, user isolation)
 ```
 
 ## Run it locally
@@ -94,6 +97,22 @@ uvicorn app.main:app --reload
 
 The API runs on http://localhost:8000, with interactive docs at http://localhost:8000/docs. Tables are created automatically on first start.
 
+### Run the tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+The tests use a temporary SQLite database, so they never touch your real data. They cover:
+
+- **Auth:** register, login, password hashing, case-insensitive emails, duplicate accounts, invalid tokens
+- **Validation:** empty or malformed input is rejected (including the empty-credentials login bug that was fixed)
+- **Tasks:** create, list, partial update, clearing a due date, toggle, delete, 404s
+- **Security:** a user can never see, change or delete another user's tasks
+
+GitHub Actions runs the full suite on every push and pull request.
+
 ### Environment variables
 
 | Variable | Description |
@@ -111,7 +130,6 @@ The API runs on http://localhost:8000, with interactive docs at http://localhost
 
 ## Roadmap
 
-- Automated tests (pytest) and CI with GitHub Actions
 - Docker and docker-compose for the full stack
 - Database migrations with Alembic
 - Email verification and password reset
